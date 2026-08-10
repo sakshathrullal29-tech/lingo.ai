@@ -1,4 +1,4 @@
-```python
+```text
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
@@ -11,7 +11,7 @@ CORS(app)
 MODEL_NAME = "facebook/nllb-200-distilled-600M"
 
 print("Loading Lingo AI multilingual translator...")
-print("English ↔ Hindi ↔ Kannada")
+print("English <-> Hindi <-> Kannada")
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
@@ -42,6 +42,11 @@ def translate():
 
     data = request.get_json()
 
+    if not data:
+        return jsonify({
+            "error": "No JSON data received"
+        }), 400
+
     text = data.get("text", "").strip()
     source = data.get("source_language", "en")
     target = data.get("target_language", "hi")
@@ -63,7 +68,10 @@ def translate():
 
     if source == target:
         return jsonify({
-            "translation": text
+            "text": text,
+            "translation": text,
+            "source_language": source,
+            "target_language": target
         })
 
     source_code = LANGUAGES[source]
