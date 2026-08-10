@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Lingo AI</title>
+
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <header>
+            <h1>🌍 Lingo AI</h1>
+
+            <p>
+                Speak. Translate. Connect.
+            </p>
+        </header>
+
+        <main>
+
+            <div class="language-section">
+
+                <div class="language-box">
+
+                    <label>
+                        Speaking Language
+                    </label>
+
+                    <select id="sourceLanguage">
+
+                        <option value="en">
+                            🇬🇧 English
+                        </option>
+
+                        <option value="hi">
+                            🇮🇳 Hindi
+                        </option>
+
+                        <option value="kn">
+                            🇮🇳 Kannada
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="swap">
+                    ⇄
+                </div>
+
+                <div class="language-box">
+
+                    <label>
+                        Translate To
+                    </label>
+
+                    <select id="targetLanguage">
+
+                        <option value="en">
+                            🇬🇧 English
+                        </option>
+
+                        <option value="hi">
+                            🇮🇳 Hindi
+                        </option>
+
+                        <option value="kn">
+                            🇮🇳 Kannada
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <div class="mic-area">
+
+                <button id="micButton">
+                    🎤
+                </button>
+
+                <p id="micText">
+                    Tap to Speak
+                </p>
+
+            </div>
+
+            <div class="result-container">
+
+                <div class="result-box">
+
+                    <h3>
+                        📝 You said
+                    </h3>
+
+                    <p id="originalText">
+                        Your speech will appear here...
+                    </p>
+
+                </div>
+
+                <div class="result-box">
+
+                    <h3>
+                        🌍 Translation
+                    </h3>
+
+                    <p id="translatedText">
+                        Your translation will appear here...
+                    </p>
+
+                    <button id="speakButton">
+                        🔊 Play Translation
+                    </button>
+
+                </div>
+
+            </div>
+
+        </main>
+         
+        <footer>
+    <div class="moving-credit">
+        Made by I PU PCMC BATCH 10
+    </div>
+</footer>
+
+<script src="script.js"></script>
+
+</body>
+</html>
