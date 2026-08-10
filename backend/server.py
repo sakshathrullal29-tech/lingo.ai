@@ -1,7 +1,9 @@
+```python
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -15,7 +17,6 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
 
 print("Multilingual translator loaded!")
-
 
 LANGUAGES = {
     "en": "eng_Latn",
@@ -62,8 +63,7 @@ def translate():
 
     if source == target:
         return jsonify({
-            "translation": text,
-            "english": text
+            "translation": text
         })
 
     source_code = LANGUAGES[source]
@@ -80,8 +80,7 @@ def translate():
 
         generated_tokens = model.generate(
             **inputs,
-            forced_bos_token_id=
-            tokenizer.convert_tokens_to_ids(target_code),
+            forced_bos_token_id=tokenizer.convert_tokens_to_ids(target_code),
             max_length=256
         )
 
@@ -99,11 +98,9 @@ def translate():
 
 
 if __name__ == "__main__":
-import os
-
-app.run(
-    host="0.0.0.0",
-    port=int(os.environ.get("PORT", 5000)),
-    debug=False
-)
-    
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=False
+    )
+```
