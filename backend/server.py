@@ -7,7 +7,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-MODEL_NAME = "facebook/nllb-200-distilled-600M"
+MODEL_NAME = "Helsinki-NLP/opus-mt-en-hi"
 
 print("Loading Lingo AI multilingual translator...")
 print("English - Hindi - Kannada")
