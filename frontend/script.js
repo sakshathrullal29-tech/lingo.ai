@@ -1,210 +1,175 @@
-const micButton = document.getElementById("micButton");
-const micText = document.getElementById("micText");
-const originalText = document.getElementById("originalText");
-const translatedText = document.getElementById("translatedText");
+const API_URL = "https://YOUR-RENDER-URL.onrender.com";
+
+const inputText = document.getElementById("inputText");
+const outputText = document.getElementById("outputText");
 
 const sourceLanguage = document.getElementById("sourceLanguage");
 const targetLanguage = document.getElementById("targetLanguage");
 
-const speakButton = document.getElementById("speakButton");
+const translateBtn = document.getElementById("translateBtn");
+const swapBtn = document.getElementById("swapBtn");
+const micBtn = document.getElementById("micBtn");
+const copyBtn = document.getElementById("copyBtn");
 
-const speechLanguages = {
-    en: "en-US",
-    hi: "hi-IN",
-    kn: "kn-IN"
-};
+const charCount = document.getElementById("charCount");
+const statusMessage = document.getElementById("statusMessage");
 
 
-// ===============================
-// MICROPHONE / SPEECH RECOGNITION
-// ===============================
+inputText.addEventListener("input", () => {
+    charCount.textContent = `${inputText.value.length} characters`;
+});
 
-const SpeechRecognition =
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
 
-if (!SpeechRecognition) {
+swapBtn.addEventListener("click", () => {
+    const oldSource = sourceLanguage.value;
+    sourceLanguage.value = targetLanguage.value;
+    targetLanguage.value = oldSource;
 
-    micText.textContent =
-        "Speech recognition is not supported ❌";
+    const oldText = inputText.value;
+    inputText.value = outputText.textContent === "Your translation will appear here..."
+        ? ""
+        : outputText.textContent;
 
-} else {
+    outputText.textContent = oldText || "Your translation will appear here...";
 
-    const recognition =
-        new SpeechRecognition();
+    charCount.textContent = `${inputText.value.length} characters`;
+});
+
+
+translateBtn.addEventListener("click", async () => {
+
+    const text = inputText.value.trim();
+
+    if (!text) {
+        statusMessage.textContent = "Please enter something to translate.";
+        return;
+    }
+
+    if (sourceLanguage.value === targetLanguage.value) {
+        outputText.textContent = text;
+        statusMessage.textContent = "Source and target languages are the same.";
+        return;
+    }
+
+    translateBtn.disabled = true;
+    translateBtn.querySelector("span").textContent = "Translating...";
+    statusMessage.textContent = "Aloy Vaani is translating...";
+
+    try {
+
+        const response = await fetch(`${API_URL}/translate`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                text: text,
+                source_language: sourceLanguage.value,
+                target_language: targetLanguage.value
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Translation failed");
+        }
+
+        outputText.textContent = data.translation;
+
+        statusMessage.textContent = "Translation complete ✨";
+
+    } catch (error) {
+
+        console.error(error);
+
+        outputText.textContent = "Unable to translate right now.";
+        statusMessage.textContent =
+            "Backend is unavailable. Please try again later.";
+
+    } finally {
+
+        translateBtn.disabled = false;
+        translateBtn.querySelector("span").textContent = "Translate";
+    }
+});
+
+
+copyBtn.addEventListener("click", async () => {
+
+    const text = outputText.textContent;
+
+    if (
+        !text ||
+        text === "Your translation will appear here..."
+    ) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(text);
+        statusMessage.textContent = "Translation copied! 📋";
+    } catch {
+        statusMessage.textContent = "Couldn't copy the translation.";
+    }
+});
+
+
+let recognition = null;
+
+if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+    recognition = new SpeechRecognition();
 
     recognition.continuous = false;
     recognition.interimResults = false;
 
+    recognition.onstart = () => {
+        micBtn.textContent = "🔴";
+        statusMessage.textContent = "Listening...";
+    };
 
-    micButton.addEventListener("click", () => {
+    recognition.onresult = (event) => {
 
-        recognition.lang =
-            speechLanguages[sourceLanguage.value] ||
-            "en-US";
-
-        micText.textContent =
-            "Listening... 🎤";
-
-        try {
-
-            recognition.start();
-
-        } catch (error) {
-
-            console.log(
-                "Recognition already started:",
-                error
-            );
-        }
-    });
-
-
-    recognition.onresult = async (event) => {
-
-        const text =
+        const transcript =
             event.results[0][0].transcript;
 
-        originalText.textContent =
-            text;
+        inputText.value = transcript;
 
-        micText.textContent =
-            "Translating... ⏳";
+        charCount.textContent =
+            `${inputText.value.length} characters`;
 
-
-        try {
-
-            const response =
-                await fetch(
-                    "http://127.0.0.1:5000/translate",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-
-                            text: text,
-
-                            source_language:
-                                sourceLanguage.value,
-
-                            target_language:
-                                targetLanguage.value
-                        })
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            console.log(
-                "Backend response:",
-                data
-            );
-
-
-            if (data.error) {
-
-                throw new Error(
-                    data.error
-                );
-            }
-
-
-            translatedText.textContent =
-                data.translation;
-
-
-            micText.textContent =
-                "Translation ready ✅";
-
-
-        } catch (error) {
-
-            console.error(
-                "Translation error:",
-                error
-            );
-
-
-            translatedText.textContent =
-                "Translation failed.";
-
-
-            micText.textContent =
-                "Translation server error ❌";
-        }
+        statusMessage.textContent =
+            "Voice captured 🎙️";
     };
 
-
-    recognition.onerror = (event) => {
-
-        console.error(
-            "Speech error:",
-            event.error
-        );
-
-        micText.textContent =
-            "Microphone error ❌";
+    recognition.onerror = () => {
+        statusMessage.textContent =
+            "Microphone couldn't be accessed.";
     };
-
 
     recognition.onend = () => {
-
-        console.log(
-            "Speech recognition ended."
-        );
+        micBtn.textContent = "🎙️";
     };
+
+} else {
+
+    micBtn.disabled = true;
+    micBtn.title = "Speech recognition is not supported in this browser.";
 }
 
 
+micBtn.addEventListener("click", () => {
 
-// ===============================
-// PLAY TRANSLATION
-// ===============================
-
-speakButton.addEventListener(
-    "click",
-    () => {
-
-        const text =
-            translatedText.textContent.trim();
-
-
-        if (
-            !text ||
-            text ===
-            "Your translation will appear here..."
-        ) {
-            return;
-        }
-
-
-        const speech =
-            new SpeechSynthesisUtterance(text);
-
-
-        speech.lang =
-            speechLanguages[
-                targetLanguage.value
-            ] || "en-US";
-
-
-        speech.rate = 0.9;
-        speech.pitch = 1;
-
-
-        window.speechSynthesis.cancel();
-
-
-        window.speechSynthesis.speak(
-            speech
-        );
+    if (!recognition) {
+        statusMessage.textContent =
+            "Voice recognition is not supported here.";
+        return;
     }
-);
+
+    recognition.start();
+});
