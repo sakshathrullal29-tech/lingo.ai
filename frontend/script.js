@@ -1,5 +1,4 @@
-const API_URL = "https://YOUR-RENDER-URL.onrender.com";
-
+const API_URL = "https://lingo-ai-ug84.onrender.com";
 const inputText = document.getElementById("inputText");
 const outputText = document.getElementById("outputText");
 
