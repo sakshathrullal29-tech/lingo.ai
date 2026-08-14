@@ -1,107 +1,114 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import torch
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../frontend", static_url_path="")
 CORS(app)
 
-MODEL_NAME = "Helsinki-NLP/opus-mt-en-hi"
 
-print("Loading Lingo AI multilingual translator...")
-print("English - Hindi - Kannada")
+# Simple lightweight translation dictionary.
+# This keeps the Render server extremely small and memory-friendly.
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+TRANSLATIONS = {
+    ("en", "hi"): {
+        "hello": "नमस्ते",
+        "hello world": "नमस्ते दुनिया",
+        "good morning": "सुप्रभात",
+        "good night": "शुभ रात्रि",
+        "thank you": "धन्यवाद",
+        "how are you": "आप कैसे हैं?",
+        "what is your name": "आपका नाम क्या है?",
+        "i am fine": "मैं ठीक हूँ",
+        "welcome": "स्वागत है",
+        "yes": "हाँ",
+        "no": "नहीं"
+    },
 
-print("Multilingual translator loaded!")
+    ("en", "kn"): {
+        "hello": "ನಮಸ್ಕಾರ",
+        "hello world": "ನಮಸ್ಕಾರ ಜಗತ್ತು",
+        "good morning": "ಶುಭೋದಯ",
+        "good night": "ಶುಭ ರಾತ್ರಿ",
+        "thank you": "ಧನ್ಯವಾದಗಳು",
+        "how are you": "ನೀವು ಹೇಗಿದ್ದೀರಿ?",
+        "what is your name": "ನಿಮ್ಮ ಹೆಸರೇನು?",
+        "i am fine": "ನಾನು ಚೆನ್ನಾಗಿದ್ದೇನೆ",
+        "welcome": "ಸ್ವಾಗತ",
+        "yes": "ಹೌದು",
+        "no": "ಇಲ್ಲ"
+    },
 
-LANGUAGES = {
-    "en": "eng_Latn",
-    "hi": "hin_Deva",
-    "kn": "kan_Knda"
+    ("hi", "en"): {
+        "नमस्ते": "hello",
+        "नमस्ते दुनिया": "hello world",
+        "सुप्रभात": "good morning",
+        "शुभ रात्रि": "good night",
+        "धन्यवाद": "thank you",
+        "हाँ": "yes",
+        "नहीं": "no"
+    },
+
+    ("kn", "en"): {
+        "ನಮಸ್ಕಾರ": "hello",
+        "ನಮಸ್ಕಾರ ಜಗತ್ತು": "hello world",
+        "ಶುಭೋದಯ": "good morning",
+        "ಶುಭ ರಾತ್ರಿ": "good night",
+        "ಧನ್ಯವಾದಗಳು": "thank you",
+        "ಹೌದು": "yes",
+        "ಇಲ್ಲ": "no"
+    }
 }
+
 
 @app.route("/")
 def home():
-    return jsonify({
-        "message": "Lingo AI backend is running!",
-        "languages": [
-            "English",
-            "Hindi",
-            "Kannada"
-        ]
-    })
+    return send_from_directory("../frontend", "index.html")
+
 
 @app.route("/translate", methods=["POST"])
 def translate():
-    data = request.get_json()
 
-    if not data:
-        return jsonify({
-            "error": "No JSON data received"
-        }), 400
+    data = request.get_json(silent=True) or {}
 
-    text = data.get("text", "").strip()
+    text = str(data.get("text", "")).strip()
     source = data.get("source_language", "en")
     target = data.get("target_language", "hi")
 
     if not text:
         return jsonify({
-            "error": "No text received"
-        }), 400
-
-    if source not in LANGUAGES:
-        return jsonify({
-            "error": "Unsupported source language"
-        }), 400
-
-    if target not in LANGUAGES:
-        return jsonify({
-            "error": "Unsupported target language"
+            "error": "Please enter text."
         }), 400
 
     if source == target:
         return jsonify({
-            "text": text,
-            "translation": text,
-            "source_language": source,
-            "target_language": target
+            "translation": text
         })
 
-    source_code = LANGUAGES[source]
-    target_code = LANGUAGES[target]
+    key = (source, target)
+    dictionary = TRANSLATIONS.get(key, {})
 
-    tokenizer.src_lang = source_code
-
-    inputs = tokenizer(
-        text,
-        return_tensors="pt"
+    result = dictionary.get(
+        text.lower(),
+        "Translation for this sentence is not available yet."
     )
 
-    with torch.no_grad():
-        generated_tokens = model.generate(
-            **inputs,
-            forced_bos_token_id=tokenizer.convert_tokens_to_ids(target_code),
-            max_length=256
-        )
-
-    translation = tokenizer.batch_decode(
-        generated_tokens,
-        skip_special_tokens=True
-    )[0]
-
     return jsonify({
-        "text": text,
-        "translation": translation,
-        "source_language": source,
-        "target_language": target
+        "translation": result
     })
 
+
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "service": "Aloy Vaani"
+    })
+
+
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+
     app.run(
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        debug=False
+        port=port
     )
